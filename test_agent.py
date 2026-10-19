@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from agent import detect_anomalies, load_readings, make_checklist
+from agent import detect_anomalies, latest_readings, load_readings, make_checklist
 
 
 class AgentTests(unittest.TestCase):
@@ -19,6 +19,13 @@ class AgentTests(unittest.TestCase):
             path.write_text("timestamp,device,temperature_c,vibration_mm_s\n2026-10-19T09:00:00,motor,NaN,2\n", encoding="utf-8")
             with self.assertRaises(ValueError):
                 load_readings(path)
+
+    def test_latest_reading_uses_timestamp_not_file_order(self):
+        rows = [
+            {"timestamp": "2026-10-19T10:00:00", "device": "motor", "temperature_c": 50, "vibration_mm_s": 2},
+            {"timestamp": "2026-10-19T09:00:00", "device": "motor", "temperature_c": 40, "vibration_mm_s": 1},
+        ]
+        self.assertEqual(50, latest_readings(rows)[0]["temperature_c"])
 
 
 if __name__ == "__main__":

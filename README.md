@@ -36,12 +36,16 @@ CSV 表头：`timestamp,device,temperature_c,vibration_mm_s`。时间使用 ISO 
 
 默认规则：温度 `> 60 °C` 或振动 `> 4.5 mm/s` 标记为异常。阈值只是演示参数，不适用于所有设备，可以用 `--max-temp` 与 `--max-vibration` 修改。
 
+公开液压设备数据的初步测试显示，这组默认阈值在 2,205 个周期中没有产生任何报警。因此“未报警”不能解释为“无故障”；真实部署必须先按设备类型校准阈值，并用有标注的历史数据验证误报和漏报。详见项目测试报告。
+
 ## 项目结构
 
 - `agent.py`：读数校验、工具函数、离线演示和可选的大模型工具调用
 - `sample_data.csv`：人工编造的示例数据
 - `test_agent.py`：输入校验与异常检测的基础测试
 - `PROJECT_BRIEF.md`：可用于申请展示的项目现状与验证计划
+- `evaluate_uci.py`：对公开液压设备数据进行可复现的离线评估
+- `TEST_REPORT.md`：公开数据测试摘要
 
 ## 一分钟演示
 
@@ -56,6 +60,16 @@ CSV 表头：`timestamp,device,temperature_c,vibration_mm_s`。时间使用 ISO 
 - 阈值检测是规则方法，并非训练好的机器学习模型。
 - 示例数据是模拟的；没有硬件接入、真实用户验证或商业收入。
 - 大模型的建议可能不准确；最终处置必须有人审核。
+
+## 公开数据复测
+
+测试使用 [UCI 液压系统状态监测数据集](https://archive.ics.uci.edu/dataset/447/condition+monitoring+of+hydraulic+systems) 中的 `TS1.txt`、`VS1.txt` 和 `profile.txt`，本仓库不包含原始数据。将这三个文件放进同一个目录后运行：
+
+```bash
+python evaluate_uci.py path/to/data-directory
+```
+
+脚本会输出混淆矩阵，并在数据目录生成 `uci_cycle_means.csv` 供主程序复测。该 CSV 中的时间是为了适配输入格式而生成的占位时间，并非真实采集时间。测试方法和结果见 `TEST_REPORT.md`。
 
 ## 后续验证
 

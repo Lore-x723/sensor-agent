@@ -48,10 +48,12 @@ def load_readings(path: Path) -> list[dict]:
 
 
 def latest_readings(readings: list[dict]) -> list[dict]:
-    """Return the last row for each device; input is assumed chronological."""
+    """Return the latest timestamp for each device, even when CSV rows are unsorted."""
     latest = {}
     for row in readings:
-        latest[row["device"]] = row
+        device = row["device"]
+        if device not in latest or datetime.fromisoformat(row["timestamp"]) > datetime.fromisoformat(latest[device]["timestamp"]):
+            latest[device] = row
     return list(latest.values())
 
 
@@ -141,15 +143,17 @@ def main() -> int:
         if args.llm:
             print(run_llm(readings, anomalies, checklist))
             return 0
-        print("设备异常处置智能体｜离线演示（模拟数据）")
+        bundled_sample = Path(__file__).with_name("sample_data.csv").resolve()
+        source_label = "内置模拟数据" if args.csv.resolve() == bundled_sample else "外部 CSV 数据"
+        print(f"设备异常处置智能体｜离线模式｜{source_label}")
         print(f"读取 {len(readings)} 条数据，发现 {len(anomalies)} 条异常。")
         if not anomalies:
-            print("未发现超过演示阈值的读数。")
+            print("未发现超过演示阈值的读数；这不代表设备没有故障，请先核验阈值适用性。")
         for item, tasks in zip(anomalies, checklist):
             print(f"\n{item['timestamp']} | {item['device']} | {'；'.join(item['reasons'])}")
             for index, step in enumerate(tasks["steps"], 1):
                 print(f"  {index}. {step}")
-        print("\n说明：演示阈值和模拟数据未经真实设备验证，处置建议需要人工复核。")
+        print("\n说明：阈值是演示参数；程序不会核实外部数据来源，处置建议需要人工复核。")
         return 0
     except (OSError, ValueError, RuntimeError, KeyError, IndexError) as exc:
         print(f"错误：{exc}", file=sys.stderr)
